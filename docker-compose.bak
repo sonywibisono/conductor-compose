@@ -1,0 +1,43 @@
+version: '2.3'
+services:
+  #r1:
+  # image: redis:alpine
+  # restart: on-failure
+  # command: "redis-server --save 60 1 --appendonly yes --loglevel warning"
+  # deploy:
+  #   resources:
+  #     limits:
+  #       memory: 10G
+  #     reservations:
+  #       memory: 100M
+  #  healthcheck:
+  #   test: [ "CMD", "redis-cli","ping" ]
+  # ports:
+  #   - "7379:6379"
+  # networks:
+  #   - internal
+ server-1:
+   container_name: conductor
+   image: orkesio/orkes-conductor-community:latest
+   build:
+     context: ../
+     dockerfile: docker/DockerfileServer
+   environment:
+     - conductor.redis-lock.serverAddress=redis://10.99.20.60:6379
+     - conductor.redis.hosts=10.99.20.60:6379:us-east-1c
+     - conductor.queue.type=redis_standalone
+     - conductor.db.type=redis_standalone
+   volumes:
+     - /root/orkes-conductor-community/docker/config/config.properties:/app/config/config.properties:ro
+   healthcheck:
+     test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+       #depends_on:
+       #r1:
+       #condition: service_healthy
+   ports:
+     - "8080:8080"
+     - "5000:5000"
+   networks:
+     - internal
+networks:
+ internal:
