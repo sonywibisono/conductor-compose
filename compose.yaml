@@ -32,7 +32,7 @@ services:
     #image: orkesio/orkes-conductor-standalone:latest
     environment:
       - CONFIG_PROP=config-es.properties
-      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms512M -Xmx4G
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms512M -Xmx2G
       - orkes_access_key=
     mem_limit: 7G
     volumes:
