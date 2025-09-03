@@ -44,7 +44,7 @@ services:
       - internal
     ports:
       - 8080:8080
-      - 3001:5000
+      - 5001:5000
       - 9001:9001
     depends_on:  
       - redis
