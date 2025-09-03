@@ -23,6 +23,10 @@ Conductor memungkinkan Anda menentukan alur kerja sebagai kode, yang menentukan 
 
 ![Landing page conductor](/images/landing-page.png)
 
+*Workflow Definition*
+
 ![Workflow Definition](/images/workflow-definition.png)
+
+*Workflow Editor*
 
 ![Workflow Editor](/images/workflow-editor.png)
