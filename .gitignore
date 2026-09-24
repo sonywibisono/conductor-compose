@@ -1,2 +1,6 @@
 docker-compose.bak
 dump.rdb
+pgdata/
+redis/
+pgdata/*
+redis/*
