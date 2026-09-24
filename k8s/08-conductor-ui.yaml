@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conductor-ui
+  namespace: conductor
+  labels:
+    app: conductor-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: conductor-ui
+  template:
+    metadata:
+      labels:
+        app: conductor-ui
+    spec:
+      containers:
+        - name: conductor-ui
+          image: conductor-oss/conductor-ui:latest
+          env:
+            - name: VITE_WF_SERVER
+              value: "http://conductor:8080"
+          ports:
+            - containerPort: 80
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: conductor-ui
+  namespace: conductor
+  labels:
+    app: conductor-ui
+spec:
+  type: ClusterIP
+  selector:
+    app: conductor-ui
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 80

@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conductor
+  namespace: conductor
+  labels:
+    app: conductor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: conductor
+  template:
+    metadata:
+      labels:
+        app: conductor
+    spec:
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for redis-sentinel..."
+              until nc -z -w 2 redis-sentinel 26379; do
+                sleep 2
+              done
+              echo "Waiting for elasticsearch..."
+              until nc -z -w 2 elasticsearch 9200; do
+                sleep 2
+              done
+              echo "Dependencies are ready!"
+      containers:
+        - name: conductor
+          image: conductoross/conductor:latest
+          stdin: true
+          tty: true
+          env:
+            - name: CONFIG_PROP
+              value: "config-redis.properties"
+            - name: CONDUCTOR_DB_TYPE
+              value: "redis_sentinel"
+            - name: CONDUCTOR_QUEUE_TYPE
+              value: "redis_sentinel"
+            - name: CONDUCTOR_REDIS_SENTINEL_MASTER_NAME
+              value: "mymaster"
+            - name: CONDUCTOR_REDIS_HOSTS
+              value: "redis-sentinel:26379:us-east-1c:SandiMasterRedis"
+            - name: CONDUCTOR_REDIS_LOCK_SERVER_TYPE
+              value: "SENTINEL"
+            - name: CONDUCTOR_REDIS_LOCK_SERVER_MASTER_NAME
+              value: "mymaster"
+            - name: CONDUCTOR_REDIS_LOCK_SERVER_ADDRESS
+              value: "redis://redis-sentinel:26379"
+            - name: CONDUCTOR_REDIS_LOCK_SERVER_PASSWORD
+              value: "SandiMasterRedis"
+            - name: JAVA_OPTS
+              value: "-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx2G"
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 5000
+              name: metrics
+            - containerPort: 9001
+              name: grpc
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 500m
+            limits:
+              memory: 3Gi
+              cpu: 2000m
+          volumeMounts:
+            - name: conductor-config
+              mountPath: /app/config/config-redis.properties
+              subPath: config-redis.properties
+            - name: conductor-config
+              mountPath: /app/config/config-es.properties
+              subPath: config-es.properties
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+      volumes:
+        - name: conductor-config
+          configMap:
+            name: conductor-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: conductor
+  namespace: conductor
+  labels:
+    app: conductor
+spec:
+  type: ClusterIP
+  selector:
+    app: conductor
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: port-5050
+      port: 5050
+      targetPort: 5000
+    - name: port-5000
+      port: 5000
+      targetPort: 5000
+    - name: grpc
+      port: 9001
+      targetPort: 9001
