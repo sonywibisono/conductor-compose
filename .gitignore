@@ -4,3 +4,6 @@ pgdata/
 redis/
 pgdata/*
 redis/*
+workflow-*
+tasks.json
+backup.zip

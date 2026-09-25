@@ -5,5 +5,5 @@ curl -X POST http://127.0.0.1:8080/api/metadata/taskdefs \
 
 curl -X PUT http://127.0.0.1:8080/api/metadata/workflow \
      -H "Content-Type: application/json" \
-     -d @workflow-dev.json
+     -d @workflow-dev-clean.json
 
