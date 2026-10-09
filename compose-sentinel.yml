@@ -65,10 +65,12 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    # image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
     ports:
       - 9200:9200
     networks:
@@ -83,22 +85,20 @@ services:
 
   conductor:
     image: conductoross/conductor:latest
+    # image: conductor:server
     container_name: conductor
     environment:
-      - CONFIG_PROP=config-redis.properties
-      - CONDUCTOR_DB_TYPE=redis_sentinel
-      - CONDUCTOR_QUEUE_TYPE=redis_sentinel
-      - CONDUCTOR_REDIS_SENTINEL_MASTER_NAME=mymaster
-      - CONDUCTOR_REDIS_HOSTS=redis-sentinel:26379:us-east-1c:SandiMasterRedis
-      # Redisson Distributed Lock (Sentinel Mode)
-      - CONDUCTOR_REDIS_LOCK_SERVER_TYPE=SENTINEL
-      - CONDUCTOR_REDIS_LOCK_SERVER_MASTER_NAME=mymaster
-      - CONDUCTOR_REDIS_LOCK_SERVER_ADDRESS=redis://redis-sentinel:26379
-      - CONDUCTOR_REDIS_LOCK_SERVER_PASSWORD=SandiMasterRedis
-      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx2G
+      - CONFIG_PROP=config-postgres-es7.properties
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx1G
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=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
+      # - COHERE_API_KEY=${COHERE_API_KEY:-}
     volumes:
-      - ./config-redis.properties:/app/config/config-redis.properties
-      - ./config-es.properties:/app/config/config-es.properties
+      # - ./config-redis.properties:/app/config/config-redis.properties
+      # - ./config-es.properties:/app/config/config-es.properties
+      # - ./config-sqlite.properties:/app/config/config-sqlite.properties
+      - ./config-postgres-es7.properties:/app/config/config-postgres-es7.properties
+      - ./tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
     stdin_open: true  # sama dengan -i (interactive)
     tty: true   
     networks:
@@ -107,6 +107,15 @@ services:
       - 8080:8080
       - 5050:5000
       - 9001:9001
+    links:
+      - elasticsearch:es
+      - redis-sentinel:rs
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"  
     depends_on:  
       redis-sentinel:
         condition: service_healthy
@@ -118,16 +127,6 @@ services:
       timeout: 30s
       retries: 12    
 
-  # conductor-ui:
-  #   image: conductor-oss/conductor-ui:latest
-  #   environment:
-  #     - VITE_WF_SERVER=http://conductor:8080
-  #   ports:
-  #     - 9090:80
-  #   networks:
-  #     - internal
-  #   depends_on:
-  #     - conductor
    
 volumes:
   redis:

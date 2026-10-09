@@ -1,4 +1,4 @@
 echo "backup workflow"
-curl http://10.98.9.61:30504/api/metadata/workflow > workflows.json
+curl http://10.14.159.142:30505/api/metadata/workflow > workflow-s.json
 echo "backup task"
-curl http://10.98.9.61:30504/api/metadata/taskdefs > tasks.json
+curl http://10.14.159.142:30505/api/metadata/taskdefs > task-s.json
