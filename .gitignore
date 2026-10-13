@@ -10,3 +10,4 @@ backup.zip
 workflow*
 elasticdata/
 data/
+.env

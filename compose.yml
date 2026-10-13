@@ -55,11 +55,13 @@ services:
     #image: conductoross/conductor:latest
     image: conductor:quarkus
     container_name: conductor
+    environment_file:
+      - .env
     environment:
       - CONFIG_PROP=config-redis-es8.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx1G
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - OPENAI_API_KEY=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
+      - OPENAI_API_KEY=${OPEN_API_KEY}
       # - COHERE_API_KEY=${COHERE_API_KEY:-}
     volumes:
       # - ./config-redis.properties:/app/config/config-redis.properties
