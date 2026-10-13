@@ -2,11 +2,22 @@ services:
   redis-master:
     image: redis:8.2.4-alpine3.22
     container_name: redis-master
-    command: redis-server /usr/local/etc/redis/redis.conf --requirepass SandiMasterRedis --masterauth SandiMasterRedis
+    command: 
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+      - --requirepass
+      - SandiMasterRedis
+      - --masterauth
+      - SandiMasterRedis
+      - --maxmemory
+      - 1536mb
+      - --maxmemory-policy
+      - allkeys-lru
+    mem_limit: 3g  
     ports:
       - 6379:6379
     volumes:
-      - ./redis:/data
+      - redis:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     restart: always
     networks:
@@ -18,19 +29,22 @@ services:
       retries: 5
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
-    # image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
+    # image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - xpack.security.enabled=false
+      - cluster.routing.allocation.disk.watermark.low=10gb                                                                
+      - cluster.routing.allocation.disk.watermark.high=5gb                                                                
+      - cluster.routing.allocation.disk.watermark.flood_stage=2gb 
     ports:
       - 9200:9200
     networks:
       - internal
     volumes:
-      - ./elasticdata:/usr/share/elasticsearch/data
+      - elasticdata:/usr/share/elasticsearch/data
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
       interval: 15s
@@ -38,20 +52,20 @@ services:
       retries: 10
 
   conductor:
-    image: conductoross/conductor:latest
-    # image: conductor:server
+    #image: conductoross/conductor:latest
+    image: conductor:quarkus
     container_name: conductor
     environment:
-      - CONFIG_PROP=config-postgres-es7.properties
+      - CONFIG_PROP=config-redis-es8.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx1G
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=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
       # - COHERE_API_KEY=${COHERE_API_KEY:-}
     volumes:
       # - ./config-redis.properties:/app/config/config-redis.properties
-      # - ./config-es.properties:/app/config/config-es.properties
+      - ./config-redis-es8.properties:/app/config/config-redis-es8.properties
       # - ./config-sqlite.properties:/app/config/config-sqlite.properties
-      - ./config-postgres-es7.properties:/app/config/config-postgres-es7.properties
+      #- ./config-postgres-es7.properties:/app/config/config-postgres-es7.properties
       - ./tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
     stdin_open: true  # sama dengan -i (interactive)
     tty: true   
