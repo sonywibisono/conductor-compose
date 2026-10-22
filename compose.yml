@@ -53,16 +53,17 @@ services:
 
   conductor:
     #image: conductoross/conductor:latest
-    image: conductor:quarkus
+    image: conductor-couchdb:latest
     container_name: conductor
     env_file:
       - .env
     environment:
-      - CONFIG_PROP=config-redis-cluster-es8.properties
+      - CONFIG_PROP=config-couchdb-es8.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx1G
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=false 
-      - CONDUCTOR_DB_TYPE=redis_cluster                                                                                  
+      - CONDUCTOR_DB_TYPE=couchdb                                                                                  
       - CONDUCTOR_QUEUE_TYPE=redis_cluster
+      - CONDUCTOR_REDIS_PASSWORD=SandiMasterRedis
       - CONDUCTOR_REDIS_HOSTS=172.28.0.11:7001,172.28.0.12:7002,172.28.0.13:7003
       - CONDUCTOR_REDIS-LOCK_SERVER-TYPE=CLUSTER
       - CONDUCTOR_REDIS-LOCK_SERVER-ADDRESS=redis://172.28.0.11:7001,redis://172.28.0.12:7002,redis://172.28.0.13:7003
@@ -71,10 +72,10 @@ services:
    
     volumes:
       # - ./config-redis.properties:/app/config/config-redis.properties
-      - ./config-redis-cluster-es8.properties:/app/config/config-redis-cluster-es8.properties
+      - ./config-couchdb-es8.properties:/app/config/config-couchdb-es8.properties
       # - ./config-sqlite.properties:/app/config/config-sqlite.properties
       #- ./config-postgres-es7.properties:/app/config/config-postgres-es7.properties
-      - ./tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
+      # - ./tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
     stdin_open: true  # sama dengan -i (interactive)
     tty: true   
     networks:

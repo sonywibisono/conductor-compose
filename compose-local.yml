@@ -16,59 +16,18 @@ services:
       timeout: 3s
       retries: 5
 
-  redis-replica:
-    image: redis:8.2.4-alpine3.22
-    container_name: redis-replica
-    command: redis-server /usr/local/etc/redis/redis.conf --replicaof redis-master 6379 --masterauth SandiMasterRedis --requirepass SandiMasterRedis
-    volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
-    networks:
-      - internal
-    ports:
-      - "6380:6379"
-    depends_on:
-      redis-master:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "redis-cli", "-a", "SandiMasterRedis", "ping" ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  redis-sentinel:
-    image: redis:8.2.4-alpine3.22
-    container_name: redis-sentinel
-    command: >
-      sh -c "mkdir -p /etc/redis &&
-             echo 'port 26379' > /etc/redis/sentinel.conf &&
-             echo 'sentinel monitor mymaster redis-master 6379 1' >> /etc/redis/sentinel.conf &&
-             echo 'sentinel auth-pass mymaster SandiMasterRedis' >> /etc/redis/sentinel.conf &&
-             echo 'sentinel down-after-milliseconds mymaster 5000' >> /etc/redis/sentinel.conf &&
-             echo 'sentinel failover-timeout mymaster 10000' >> /etc/redis/sentinel.conf &&
-             echo 'sentinel resolve-hostnames yes' >> /etc/redis/sentinel.conf &&
-             echo 'sentinel announce-hostnames yes' >> /etc/redis/sentinel.conf &&
-             redis-server /etc/redis/sentinel.conf --sentinel"
-    depends_on:
-      redis-master:
-        condition: service_healthy
-      redis-replica:
-        condition: service_healthy
-    networks:
-      - internal
-    ports:
-      - "26379:26379"
-    healthcheck:
-      test: [ "CMD", "redis-cli", "-p", "26379", "ping" ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+  
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - cluster.routing.allocation.disk.watermark.low=10gb                                                                
+      - cluster.routing.allocation.disk.watermark.high=5gb                                                                
+      - cluster.routing.allocation.disk.watermark.flood_stage=2gb
     ports:
       - 9200:9200
     networks:
@@ -82,18 +41,17 @@ services:
       retries: 10
 
   conductor:
-    image: sonywibisono/conductor-quarkus:latest
+    image: conductoross/conductor:latest
     container_name: conductor
     environment:
       - CONFIG_PROP=config-redis.properties
-      - CONDUCTOR_DB_TYPE=redis_sentinel
-      - CONDUCTOR_QUEUE_TYPE=redis_sentinel
-      - CONDUCTOR_REDIS_SENTINEL_MASTER_NAME=mymaster
-      - CONDUCTOR_REDIS_HOSTS=redis-sentinel:26379:us-east-1c:SandiMasterRedis
-      # Redisson Distributed Lock (Sentinel Mode)
-      - CONDUCTOR_REDIS_LOCK_SERVER_TYPE=SENTINEL
-      - CONDUCTOR_REDIS_LOCK_SERVER_MASTER_NAME=mymaster
-      - CONDUCTOR_REDIS_LOCK_SERVER_ADDRESS=redis://redis-sentinel:26379
+      - CONDUCTOR_DB_TYPE=redis_standalone
+      - CONDUCTOR_QUEUE_TYPE=redis_standalone
+      - CONDUCTOR_REDIS_HOSTS=redis-master:6379
+      - CONDUCTOR_REDIS_PASSWORD=SandiMasterRedis
+      # Redisson Distributed Lock (Standalone Mode)
+      - CONDUCTOR_REDIS_LOCK_SERVER_TYPE=SINGLE
+      - CONDUCTOR_REDIS_LOCK_SERVER_ADDRESS=redis://redis-master:6379
       - CONDUCTOR_REDIS_LOCK_SERVER_PASSWORD=SandiMasterRedis
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx2G
     volumes:
@@ -108,7 +66,7 @@ services:
       - 5050:5000
       - 9001:9001
     depends_on:  
-      redis-sentinel:
+      redis-master:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
@@ -118,20 +76,9 @@ services:
       timeout: 30s
       retries: 12    
 
-  # conductor-ui:
-  #   image: conductor-oss/conductor-ui:latest
-  #   environment:
-  #     - VITE_WF_SERVER=http://conductor:8080
-  #   ports:
-  #     - 9090:80
-  #   networks:
-  #     - internal
-  #   depends_on:
-  #     - conductor
    
 volumes:
   redis:
-  postgres:
   elasticdata:
 
 networks:
