@@ -61,12 +61,6 @@ services:
       - CONFIG_PROP=config-couchdb-es8.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx1G
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=false 
-      - CONDUCTOR_DB_TYPE=couchdb                                                                                  
-      - CONDUCTOR_QUEUE_TYPE=redis_cluster
-      - CONDUCTOR_REDIS_PASSWORD=SandiMasterRedis
-      - CONDUCTOR_REDIS_HOSTS=172.28.0.11:7001,172.28.0.12:7002,172.28.0.13:7003
-      - CONDUCTOR_REDIS-LOCK_SERVER-TYPE=CLUSTER
-      - CONDUCTOR_REDIS-LOCK_SERVER-ADDRESS=redis://172.28.0.11:7001,redis://172.28.0.12:7002,redis://172.28.0.13:7003
       - CONDUCTOR_SCRIPT_CONTEXT_POOL_ENABLED=true                                                                                
       - CONDUCTOR_SCRIPT_CONTEXT_POOL_SIZE=20
    
