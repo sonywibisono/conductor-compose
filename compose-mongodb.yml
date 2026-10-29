@@ -1,0 +1,89 @@
+services:
+  mongodb_local:
+    image: mongo:latest
+    container_name: mongodb_local
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: Password123
+      MONGO_INITDB_DATABASE: conductor
+
+    ports:
+      - "37017:27017"
+
+    volumes:
+      - mongodb_data:/data/db
+      - ./config/mongod.conf:/etc/mongod.conf
+      # - ./mongodb-persistence/src/main/resources/db/migration_mongodb/initdb.js:/docker-entrypoint-initdb.d/initdb.js:ro
+    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "mongosh", "-u", "root", "-p", "Password123", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  conductor:
+    #image: conductoross/conductor:latest
+    image: conductor-quarkus:mongodb
+    container_name: conductor
+    env_file:
+      - .env
+    environment:
+      - CONFIG_PROP=config-redis-cluster-mongodb.properties
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms1G -Xmx3G -XX:+UseG1GC -XX:MaxGCPauseMillis=100
+      - QUARKUS_HTTP_ACCESS_LOG_ENABLED=false
+      - MONGODB_URI=mongodb://root:Password123@mongodb_local:27017/conductor?authSource=admin&maxPoolSize=64&minPoolSize=8&connectTimeoutMS=5000
+      
+
+    volumes:
+      # - ./config-redis.properties:/app/config/config-redis.properties
+      - ./config/config-redis-cluster-mongodb.properties:/app/config/config-redis-cluster-mongodb.properties
+      # - ./config-sqlite.properties:/app/config/config-sqlite.properties
+      #- ./config-postgres-es7.properties:/app/config/config-postgres-es7.properties
+      # - ./tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
+    stdin_open: true  # sama dengan -i (interactive)
+    tty: true
+    networks:
+      - internal
+    ports:
+      - 8080:8080
+      - 5050:5000
+      - 9001:9001
+    # links:
+      # - mongodb_local:mongodb
+      # - elasticsearch:es
+      # - redis-master:rs
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+    depends_on:
+      mongodb_local:
+        condition: service_healthy
+      # elasticsearch:
+        # condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: '2'
+        reservations:
+          memory: 2g
+          cpus: '1'
+
+
+volumes:
+  mongodb_data:
+
+networks:
+  internal:
+    driver: bridge
