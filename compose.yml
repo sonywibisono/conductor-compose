@@ -1,32 +1,32 @@
 services:
-  # redis-master:
-  #   image: redis:8.2.4-alpine3.22
-  #   container_name: redis-master
-  #   command: 
-  #     - redis-server
-  #     - /usr/local/etc/redis/redis.conf
-  #     - --requirepass
-  #     - SandiMasterRedis
-  #     - --masterauth
-  #     - SandiMasterRedis
-  #     - --maxmemory
-  #     - 1536mb
-  #     - --maxmemory-policy
-  #     - allkeys-lru
-  #   mem_limit: 1g  
-  #   ports:
-  #     - 6379:6379
-  #   volumes:
-  #     - redis:/data
-  #     - ./redis.conf:/usr/local/etc/redis/redis.conf
-  #   restart: always
-  #   networks:
-  #     - internal
-  #   healthcheck:
-  #     test: [ "CMD", "redis-cli", "-a", "SandiMasterRedis", "ping" ]
-  #     interval: 5s
-  #     timeout: 3s
-  #     retries: 5
+  redis-master:
+    image: redis:8.2.4-alpine3.22
+    container_name: redis-master
+    command: 
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+      - --requirepass
+      - SandiMasterRedis
+      - --masterauth
+      - SandiMasterRedis
+      - --maxmemory
+      - 1536mb
+      - --maxmemory-policy
+      - allkeys-lru
+    mem_limit: 1g  
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    restart: always
+    networks:
+      - internal
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "SandiMasterRedis", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   elasticsearch:
     # image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
@@ -52,13 +52,13 @@ services:
       retries: 10
 
   conductor:
-    #image: conductoross/conductor:latest
-    image: conductor:quarkus
+    image: conductoross/conductor:3.32.0
+    # image: conductor:quarkus
     container_name: conductor
     env_file:
       - .env
     environment:
-      - CONFIG_PROP=config-redis-cluster-es8.properties
+      - CONFIG_PROP=config-sqlite.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms256M -Xmx1G
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=false 
       - CONDUCTOR_SCRIPT_CONTEXT_POOL_ENABLED=true                                                                                
@@ -67,7 +67,7 @@ services:
     volumes:
       # - ./config-redis.properties:/app/config/config-redis.properties
       - ./config-redis-cluster-es8.properties:/app/config/config-redis-cluster-es8.properties
-      # - ./config-sqlite.properties:/app/config/config-sqlite.properties
+      - ./config-sqlite.properties:/app/config/config-sqlite.properties
       #- ./config-postgres-es7.properties:/app/config/config-postgres-es7.properties
       - ./tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
     stdin_open: true  # sama dengan -i (interactive)
@@ -75,12 +75,12 @@ services:
     networks:
       - internal
     ports:
-      - 8080:8080
+      - 9090:8080
       - 5050:5000
       - 9001:9001
     links:
       - elasticsearch:es
-      # - redis-master:rs
+      - redis-master:rs
     
     logging:
       driver: "json-file"
@@ -88,8 +88,8 @@ services:
         max-size: "1k"
         max-file: "3"  
     depends_on:  
-      # redis-master:
-      #   condition: service_healthy
+      redis-master:
+        condition: service_healthy
       elasticsearch:
         condition: service_healthy
     healthcheck:
