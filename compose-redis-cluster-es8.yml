@@ -1,0 +1,99 @@
+services:
+  
+  elasticsearch:
+    # image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
+      - xpack.security.enabled=false
+      - cluster.routing.allocation.disk.watermark.low=10gb                                                                
+      - cluster.routing.allocation.disk.watermark.high=5gb                                                                
+      - cluster.routing.allocation.disk.watermark.flood_stage=2gb 
+    ports:
+      - 9200:9200
+    networks:
+      - internal
+    volumes:
+      - elasticdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    # deploy:
+  #     resources:
+  #       limits:
+  #         memory: 4g
+  #       reservations:
+  #         memory: 2g  
+
+  conductor:
+    #image: conductoross/conductor:latest
+    image: conductor-quarkus:latest
+    container_name: conductor
+    env_file:
+      - .env
+    environment:
+      - CONFIG_PROP=config-oracle-redis.properties
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms1G -Xmx3G -XX:+UseG1GC -XX:MaxGCPauseMillis=100
+      - QUARKUS_HTTP_ACCESS_LOG_ENABLED=false 
+      - ORACLE_USER=cdt
+      - ORACLE_PASSWORD="PasswordApp123@!#"
+      - ORACLE_URL=jdbc:oracle:thin:@//host.docker.internal:1521/XEPDB1
+      - CONDUCTOR_ELASTICSEARCH_URL=http://es:9200
+      - CONDUCTOR_SCRIPT_CONTEXT_POOL_ENABLED=true
+      - CONDUCTOR_SCRIPT_CONTEXT_POOL_SIZE=150
+      
+    volumes:
+      - ./config/config-oracle-redis.properties:/app/config/config-oracle-redis.properties
+      # - ./config/config-redis-cluster.properties:/app/config/config-redis-cluster-es8.properties
+      # - ./config-sqlite.properties:/app/config/config-sqlite.properties
+      #- ./config-postgres-es7.properties:/app/config/config-postgres-es7.properties
+      # - ./tmp/conductor-file-storage-e2e:/tmp/conductor-file-storage-e2e
+    stdin_open: true  # sama dengan -i (interactive)
+    tty: true   
+    networks:
+      - internal
+    ports:
+      - 8080:8080
+      - 5050:5000
+      - 9001:9001
+    # links:
+      # - elasticsearch:es
+      # - redis-master:rs
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"  
+    # depends_on:  
+      # redis-master:
+      #   condition: service_healthy
+      # elasticsearch:
+        # condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 12    
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: '4'
+        reservations:
+          memory: 2g
+          cpus: '2'  
+
+   
+# volumes:
+#   redis:
+#   postgres:
+  # elasticdata:
+
+networks:
+  internal:
+    driver: bridge

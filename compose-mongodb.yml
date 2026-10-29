@@ -35,9 +35,7 @@ services:
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false -Xms1G -Xmx3G -XX:+UseG1GC -XX:MaxGCPauseMillis=100
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=false
       - MONGODB_URI=mongodb://root:Password123@mongodb_local:27017/conductor?authSource=admin&maxPoolSize=64&minPoolSize=8&connectTimeoutMS=5000
-      # - CONDUCTOR_ELASTICSEARCH_URL=http://es:9200
-      # - CONDUCTOR_SCRIPT_CONTEXT_POOL_ENABLED=true
-      # - CONDUCTOR_SCRIPT_CONTEXT_POOL_SIZE=150
+      
 
     volumes:
       # - ./config-redis.properties:/app/config/config-redis.properties
