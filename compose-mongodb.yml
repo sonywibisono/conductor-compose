@@ -12,6 +12,7 @@ services:
 
     volumes:
       - mongodb_data:/data/db
+      - ./config/mongod.conf:/etc/mongod.conf
       # - ./mongodb-persistence/src/main/resources/db/migration_mongodb/initdb.js:/docker-entrypoint-initdb.d/initdb.js:ro
     restart: unless-stopped
     networks:
