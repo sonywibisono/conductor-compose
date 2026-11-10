@@ -11,3 +11,5 @@ workflow*
 elasticdata/
 data/
 .env
+__pycache__
+tmp/

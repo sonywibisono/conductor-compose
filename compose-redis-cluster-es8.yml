@@ -30,8 +30,8 @@ services:
   #         memory: 2g  
 
   conductor:
-    #image: conductoross/conductor:latest
-    image: conductor-quarkus:latest
+    # image: conductoross/conductor:latest
+    image: conductor-quarkus:amd64
     container_name: conductor
     env_file:
       - .env
